@@ -1,0 +1,7 @@
+[work]
+161 ansible_ssh_host=localhost  ansible_ssh_port=9000 ansible_ssh_user=username asnible_ssh_pass=password
+162 ansible_ssh_host=localhost  ansible_ssh_port=9001 ansible_ssh_user=username asnible_ssh_pass=password
+163 ansible_ssh_host=localhost  ansible_ssh_port=9002 ansible_ssh_user=username asnible_ssh_pass=password
+164 ansible_ssh_host=localhost  ansible_ssh_port=9003 ansible_ssh_user=username asnible_ssh_pass=password
+
+

@@ -1,0 +1,6 @@
+- hosts: work
+  remote_user: 默认的远程用户
+  sudo: yes
+  tasks:
+          - name:test connection
+              ping:

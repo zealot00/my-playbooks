@@ -1,0 +1,162 @@
+- hosts: work
+  vars:
+      jdk_path_link: /data/tools/jdk
+      tools_path: /data/tools
+      tmp_path: /data/tmp
+      server_path: /data/server
+      zookeeper_port: 2181
+      zoo_data_path: /data/data/zookeeper_data
+      ip: "{{ ansible_eth0['ipv4']['address'] }}"
+      server_1: 10.0.13.50
+      server_2: 10.0.13.51
+      server_3: 10.0.13.52
+      server_1_id: 0
+      server_2_id: 1
+      server_3_id: 2
+      
+
+  remote_user: yb
+  sudo: yes
+  tasks:
+      - name: install libselinux-python
+        yum: pkg=libselinux-python state=installed
+
+  tasks:
+      - name: create /data/tmp path
+        file: path={{ tmp_path }} state=directory
+
+  tasks:
+      - name: create /data/data path
+        file: path=/data/data state=directory
+
+  tasks:
+      - name: copy jdk
+        copy: src=/home/zealot/tools/jdk-7u79-linux-x64.tar.gz dest=/data/tmp
+      - name: create /data/tools
+        file: path={{ tools_path }} state=directory 
+      - name: unzip jdk and link
+        shell: /bin/tar -zxvf /data/tmp/jdk-7u79-linux-x64.tar.gz -C /data/tools/ 
+      - name: create jdk link
+        file: src=/data/tools/jdk1.7.0_79 dest={{ jdk_path_link }} state=link
+      - name: set profile
+        shell: grep 'export PATH=$JAVA_HOME/bin:$PATH' /etc/profile || echo 'export JAVA_HOME=/data/tools/jdk' >> /etc/profile
+        shell: grep 'export PATH=$JAVA_HOME/bin:$PATH' /etc/profile || echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/profile
+
+  tasks:
+      - name: create server path /data/server
+        file: path={{ server_path }} state=directory
+      - name: copy zookeeper 
+        copy: src=/home/zealot/tools/server/zookeeper-3.4.9.tar.gz dest=/data/tmp
+      - name: copy kafka
+        copy: src=/home/zealot/tools/server/kafka_2.10-0.10.2.1.tgz dest=/data/tmp
+      - name: unzip zookeeper
+        shell: /bin/tar -zxvf /data/tmp/zookeeper-3.4.9.tar.gz -C /data/server
+      - name: unzip kafka
+        shell: /bin/tar -zxvf /data/tmp/kafka_2.10-0.10.2.1.tgz -C /data/server
+      - name: link zookeeper
+        file: src=/data/server/zookeeper-3.4.9 dest=/data/server/zookeeper state=link
+      - name: create /data/data/zookeeper_data
+        file: path=/data/data/zookeeper_data state=directory
+      - name: link kafka
+        file: src=/data/server/kafka_2.10-0.10.2.1 dest=/data/server/kafka state=link
+      - name: create /data/data/kafka_data
+        file: path=/data/data/kafka_data state=directory
+
+  tasks:
+      - name: build zookeeper config file
+        template: src=/home/zealot/script/ansible/template/zoo.cfg.j2 dest=/data/server/zookeeper/conf/zoo.cfg
+      - name: backup_hosts
+        shell: cp /etc/hosts /etc/hosts.ansible.bak
+      - name: add hosts
+        lineinfile: dest=/etc/hosts line= "{{ ip }}     {{ ansible_hostname }} "
+      - name: build zookeeper log config file
+        template: src=/home/zealot/script/ansible/template/log4j.properties.zk.j2 dest=/data/server/zookeeper/conf/log4j.properties
+
+- hosts: 10.0.13.50
+  remote_user: yb
+  sudo: yes
+  vars:
+      zoo_data_path: /data/data/zookeeper_data
+      server_1_id: 1
+      server_1: 10.0.13.50
+      server_2: 10.0.13.51
+      server_3: 10.0.13.52
+
+  tasks:
+      - name: touch id
+        shell: echo {{server_1_id}} > {{zoo_data_path}}/myid
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_1}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_2}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_3}} -j ACCEPT
+      - name: start zookeeper
+        shell: source /etc/profile && /data/server/zookeeper/bin/zkServer.sh start
+
+- hosts: 10.0.13.51
+  remote_user: yb
+  sudo: yes
+  vars:
+      server_1: 10.0.13.50
+      server_2: 10.0.13.51
+      server_3: 10.0.13.52
+      zoo_data_path: /data/data/zookeeper_data
+      server_2_id: 2
+  tasks:
+      - name: touch id
+        shell: echo {{server_2_id}} > {{zoo_data_path}}/myid
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_1}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_2}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_3}} -j ACCEPT
+      - name: start zookeeper
+        shell: source /etc/profile && /data/server/zookeeper/bin/zkServer.sh start
+
+- hosts: 10.0.13.52
+  remote_user: yb
+  sudo: yes
+  vars:
+      server_1: 10.0.13.50
+      server_2: 10.0.13.51
+      server_3: 10.0.13.52
+      zoo_data_path: /data/data/zookeeper_data
+      server_3_id: 3
+  tasks:
+      - name: touch id
+        shell: echo {{server_3_id}} > {{zoo_data_path}}/myid
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_1}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_2}} -j ACCEPT
+      - name: add iptables
+        shell: /sbin/iptables -I INPUT -p tcp -m tcp -s {{server_3}} -j ACCEPT
+      - name: start zookeeper
+        shell: source /etc/profile && /data/server/zookeeper/bin/zkServer.sh start
+
+
+
+
+
+
+
+      
+
+
+
+
+
+
+
+      
+
+
+
+
+
+
+
+      
+

@@ -1,0 +1,28 @@
+- hosts: work
+  vars:
+          vim: vim
+          make: make
+          cmake: cmake
+  remote_user: TJZX_yubin
+  sudo: yes
+  tasks:
+          - name: init package
+            yum: name={{ item }} state=latest
+            with_items:
+                    - "{{ vim }}"
+                    - "{{ make }}"
+                    - "{{ cmake }}"
+
+
+  tasks:
+          - name: make base path
+            shell: mkdir -p {{ item }}
+            with_items:
+                    - /data/data
+                    - /data/app
+                    - /data/logs
+                    - /data/server
+                    - /data/tmp
+                    - /data/tools
+
+

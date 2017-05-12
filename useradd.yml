@@ -1,0 +1,16 @@
+- hosts: work
+  sudo: True
+  vars:
+          suduer: true
+          user1: user1
+          user2: user2
+          user3: user3
+  tasks:
+          - name: create new user {{ item }}
+            user: name={{ item }} shell=/bin/bash  password={{ '可以使用随机生成的密码' | password_hash('sha512') }} update_password=always append=yes
+          - name: add sudo
+            lineinfile: dest=/etc/sudoers line="{{item}} ALL=(ALL) ALL" 
+            with_items:
+                    - "{{user1}}"
+                    - "{{user2}}"
+                    - "{{user3}}"

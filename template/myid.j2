@@ -1,0 +1,12 @@
+{% if {{server_1}} == {{ansible_eth0['ipv4']['address']}} %}
+{{server_1_id}}
+{% endif %}
+
+{% if {{server_2}} == {{ansible_eth0['ipv4']['address']}} %}
+{{server_2_id}}
+{% endif %}
+
+{% if {{server_3}} == {{ansible_eth0['ipv4']['address']}} %}
+{{server_3_id}}
+{% endif %}
+
